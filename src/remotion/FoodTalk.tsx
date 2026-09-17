@@ -97,7 +97,6 @@ const LineSegment: React.FC<{
   anchorX: number;
   anchorY: number;
   isPunchline: boolean;
-  onMouth: (v: number) => void;
 }> = ({ segment, character, playbackRate, anchorX, anchorY, isPunchline }) => {
   return (
     <>
@@ -213,7 +212,6 @@ export const FoodTalk: React.FC<FoodTalkProps> = (props) => {
               anchorX={anchorX}
               anchorY={anchorY}
               isPunchline={seg.index === finalScript.punchline_index}
-              onMouth={() => {}}
               />
             </div>
           </Sequence>

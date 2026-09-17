@@ -24,7 +24,6 @@ export const Bubble: React.FC<{
   const fontSize = text.length > 110 ? 38 : text.length > 70 ? 42 : 48;
   const left = Math.max(30, Math.min(WIDTH - width - 30, anchorX - width / 2));
   const tailX = Math.max(60, Math.min(width - 60, anchorX - left));
-  const height = 0; // s'ajusta pel contingut; posem el bloc per sobre de l'ancoratge
   return (
     <div
       style={{
@@ -47,7 +46,6 @@ export const Bubble: React.FC<{
           boxShadow: "0 18px 40px rgba(0,0,0,0.35)",
           fontFamily: FONT_TEXT,
           color: "#1a1a1a",
-          minHeight: height,
         }}
       >
         <div
