@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ca">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FoodTalk · Vídeos de menjar que parla</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="brand">🍅 FoodTalk</div>
+    <div class="sub">Imatge + idea → Reel d'Instagram i TikTok amb personatges de menjar que parlen</div>
+    <div id="config-warning" class="warn hidden"></div>
+  </header>
+
+  <main class="layout">
+    <section class="panel">
+      <h2>1 · Què vols fer?</h2>
+      <form id="form">
+        <label class="drop" id="drop">
+          <input type="file" id="image" name="image" accept="image/jpeg,image/png,image/webp,image/gif" hidden />
+          <img id="preview" class="hidden" alt="" />
+          <div id="drop-text">
+            <strong>Arrossega una imatge aquí</strong> o fes clic per triar-la<br />
+            <small>Opcional. Un plat, un producte, la teva parada… Claude la mira i s'hi inspira.</small>
+          </div>
+        </label>
+
+        <label>Idea o prompt
+          <textarea name="prompt" id="prompt" rows="4" required placeholder="Ex.: Una pizza margarita i una pizza amb pinya discuteixen sobre qui és la pizza 'de veritat'. Volem promocionar la pizzeria sense dir-ho directament."></textarea>
+        </label>
+
+        <div class="grid">
+          <label>Idioma
+            <select name="language">
+              <option value="ca">Català</option>
+              <option value="es">Castellà</option>
+              <option value="en">Anglès</option>
+            </select>
+          </label>
+          <label>Personatges
+            <select name="characterCount">
+              <option value="auto">Automàtic</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+            </select>
+          </label>
+          <label>To
+            <select name="tone">
+              <option value="witty">Enginyós</option>
+              <option value="sarcastic">Sarcàstic</option>
+              <option value="absurd">Absurd</option>
+              <option value="wholesome">Tendre</option>
+              <option value="dramatic">Paròdia dramàtica</option>
+              <option value="promo">Publicitari amb gràcia</option>
+            </select>
+          </label>
+          <label>Durada objectiu
+            <select name="targetSeconds">
+              <option value="25">~25 s</option>
+              <option value="40" selected>~40 s</option>
+              <option value="55">~55 s</option>
+            </select>
+          </label>
+          <label>Veus
+            <select name="ttsProvider" id="tts">
+              <option value="auto">Automàtic</option>
+              <option value="elevenlabs">ElevenLabs</option>
+              <option value="openai">OpenAI</option>
+              <option value="edge">Edge (gratuït)</option>
+              <option value="silent">Sense veu (només text)</option>
+            </select>
+          </label>
+          <label>Marca / usuari
+            <input name="brandHandle" id="brand" placeholder="@elmeunegoci" />
+          </label>
+        </div>
+
+        <fieldset class="platforms">
+          <legend>Formats</legend>
+          <label><input type="checkbox" name="platforms" value="reel" checked /> Instagram Reel</label>
+          <label><input type="checkbox" name="platforms" value="tiktok" checked /> TikTok</label>
+        </fieldset>
+
+        <button type="submit" id="submit" class="primary">Genera el vídeo</button>
+        <button type="button" id="demo" class="ghost" title="Prova tot el procés amb un guió d'exemple, sense gastar crèdits">Prova amb un guió d'exemple</button>
+      </form>
+    </section>
+
+    <section class="panel" id="result-panel">
+      <h2>2 · Resultat</h2>
+      <div id="empty" class="muted">Encara no hi ha cap vídeo. Omple el formulari i prem «Genera el vídeo».</div>
+
+      <div id="progress" class="hidden">
+        <div class="steps">
+          <span data-step="script">Guió</span>
+          <span data-step="voices">Veus</span>
+          <span data-step="rendering">Render</span>
+          <span data-step="done">Fet</span>
+        </div>
+        <div class="bar"><div id="bar-fill"></div></div>
+        <div id="step-text" class="muted"></div>
+        <pre id="logs"></pre>
+      </div>
+
+      <div id="result" class="hidden">
+        <div class="videos" id="videos"></div>
+        <h3>Text per publicar</h3>
+        <div class="caption-box">
+          <pre id="captions"></pre>
+          <button type="button" id="copy" class="ghost">Copia</button>
+        </div>
+        <h3>Guió <small class="muted">(edita'l i torna a renderitzar sense tornar a demanar-lo a Claude)</small></h3>
+        <div id="script-editor"></div>
+        <button type="button" id="rerender" class="primary">Torna a renderitzar amb aquest guió</button>
+      </div>
+    </section>
+  </main>
+
+  <section class="panel history">
+    <h2>Historial</h2>
+    <div id="history" class="muted">Res encara.</div>
+  </section>
+
+  <script src="/app.js"></script>
+</body>
+</html>
