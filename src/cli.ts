@@ -1,4 +1,7 @@
 import "dotenv/config";
+import dns from "node:dns";
+// A Windows amb xarxes sense IPv6 operatiu, Node pot fallar amb "Connection error": prioritzem IPv4.
+dns.setDefaultResultOrder("ipv4first");
 import fs from "node:fs";
 import path from "node:path";
 import { parseArgs } from "node:util";
