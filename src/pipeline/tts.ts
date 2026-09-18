@@ -26,33 +26,113 @@ export function resolveProvider(requested: GenerationOptions["ttsProvider"]): Tt
 // ElevenLabs
 // ---------------------------------------------------------------------------
 
-/** Veus predefinides d'ElevenLabs. Es poden sobreescriure amb ELEVENLABS_VOICE_<ARQUETIP>. */
+/**
+ * Veus predefinides d'ElevenLabs (biblioteca per defecte dels comptes actuals).
+ * Es poden sobreescriure amb ELEVENLABS_VOICE_<ARQUETIP>. Si una veu no existeix al
+ * compte, es tria automàticament una de semblant entre les que hi ha.
+ */
 const ELEVENLABS_DEFAULT_VOICES: Record<VoiceArchetype, string> = {
-  deep_male: "pNInz6obpgDQGcFmaJgB", // Adam
-  warm_male: "ErXwobaYiN019PkbY4Cg", // Antoni
-  energetic_male: "TxGEqnHXHKQubHvXuaqS", // Josh
-  grumpy_old_male: "VR6AewLTigWBAiOoZG7X", // Arnold
-  warm_female: "21m00Tcm4TlvDq8ikWAM", // Rachel
-  energetic_female: "AZnzlk1XvdvUeBnXmlld", // Domi
-  sassy_female: "EXAVITQu4vr4xnSDxMaL", // Bella
-  squeaky: "MF3mGyEYCl7XN6t7lTaR", // Elli
-  kid: "jBpfuIE2acCO8z3wKNLl", // Gigi
+  deep_male: "nPczCjzI2devNBz1zQrb", // Brian
+  warm_male: "JBFqnCBsd6RMkjVDRZzb", // George
+  energetic_male: "IKne3meq5aSn9XLyUdCD", // Charlie
+  grumpy_old_male: "pqHfZKP75CvOlQylNhV4", // Bill
+  warm_female: "XrExE9yKIg1WjnnlVkGX", // Matilda
+  energetic_female: "cgSgspJ2msm6clMCkdW9", // Jessica
+  sassy_female: "FGY2WhTYpPnrIDTdsKH5", // Laura
+  squeaky: "pFZP5JQG7iQjIQuC4Bku", // Lily
+  kid: "SAz9YHcvj6GT2YYXdXww", // River
 };
 
-function elevenLabsVoice(archetype: VoiceArchetype): string {
-  return (
-    process.env[`ELEVENLABS_VOICE_${archetype.toUpperCase()}`] || ELEVENLABS_DEFAULT_VOICES[archetype]
-  );
+type ElevenVoice = { voice_id: string; name: string; labels?: Record<string, string> };
+
+/** Preferències per arquetip: paraules clau que sumen punts si apareixen a les etiquetes de la veu. */
+const ELEVENLABS_PREFERENCES: Record<VoiceArchetype, { gender: "male" | "female" | "any"; age: string[]; keywords: string[] }> = {
+  deep_male: { gender: "male", age: ["middle_aged", "middle-aged", "old"], keywords: ["deep", "authoritative", "resonant", "narration", "serious"] },
+  warm_male: { gender: "male", age: ["middle_aged", "middle-aged"], keywords: ["warm", "friendly", "calm", "soothing", "gentle"] },
+  energetic_male: { gender: "male", age: ["young"], keywords: ["energetic", "upbeat", "casual", "excited", "hype", "natural"] },
+  grumpy_old_male: { gender: "male", age: ["old", "middle_aged", "middle-aged"], keywords: ["gruff", "raspy", "trustworthy", "wise", "deep", "crisp"] },
+  warm_female: { gender: "female", age: ["middle_aged", "middle-aged"], keywords: ["warm", "soft", "calm", "soothing", "mature", "friendly"] },
+  energetic_female: { gender: "female", age: ["young"], keywords: ["energetic", "upbeat", "expressive", "excited", "social", "bright"] },
+  sassy_female: { gender: "female", age: ["young", "middle_aged", "middle-aged"], keywords: ["confident", "sassy", "expressive", "playful", "bold", "witty"] },
+  squeaky: { gender: "female", age: ["young"], keywords: ["high", "childlike", "playful", "cute", "animated", "cartoon"] },
+  kid: { gender: "any", age: ["young"], keywords: ["child", "kid", "young", "playful", "cartoon", "animated"] },
+};
+
+let elevenVoicesCache: Promise<ElevenVoice[]> | null = null;
+
+async function listElevenLabsVoices(apiKey: string): Promise<ElevenVoice[]> {
+  if (!elevenVoicesCache) {
+    elevenVoicesCache = fetch("https://api.elevenlabs.io/v1/voices", { headers: { "xi-api-key": apiKey } })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`ElevenLabs /voices ${res.status}`);
+        const data = (await res.json()) as { voices?: ElevenVoice[] };
+        return data.voices ?? [];
+      })
+      .catch((err) => {
+        elevenVoicesCache = null;
+        throw err;
+      });
+  }
+  return elevenVoicesCache;
+}
+
+const elevenAssigned = new Map<string, string>(); // `${archetype}:${language}` -> voice_id
+
+/**
+ * Tria la veu d'ElevenLabs per a un arquetip: 1) variable d'entorn, 2) veu per defecte si existeix al compte,
+ * 3) la veu del compte que millor encaixa amb les preferències (evitant repetir veus entre arquetips).
+ */
+async function elevenLabsVoice(archetype: VoiceArchetype, language: Language, apiKey: string): Promise<string> {
+  const override = process.env[`ELEVENLABS_VOICE_${archetype.toUpperCase()}`];
+  if (override) return override;
+  const key = `${archetype}:${language}`;
+  const cached = elevenAssigned.get(key);
+  if (cached) return cached;
+
+  let voices: ElevenVoice[] = [];
+  try {
+    voices = await listElevenLabsVoices(apiKey);
+  } catch {
+    return ELEVENLABS_DEFAULT_VOICES[archetype];
+  }
+  const ids = new Set(voices.map((v) => v.voice_id));
+  const preferred = ELEVENLABS_DEFAULT_VOICES[archetype];
+  if (ids.has(preferred)) {
+    elevenAssigned.set(key, preferred);
+    return preferred;
+  }
+  if (voices.length === 0) return preferred;
+
+  const pref = ELEVENLABS_PREFERENCES[archetype];
+  const langName = { ca: "catalan", es: "spanish", en: "english" }[language];
+  const used = new Set(elevenAssigned.values());
+  const scored = voices.map((v) => {
+    const labels = Object.values(v.labels ?? {}).join(" ").toLowerCase() + " " + v.name.toLowerCase();
+    let score = 0;
+    const gender = (v.labels?.gender ?? "").toLowerCase();
+    if (pref.gender === "any" || gender === pref.gender) score += 5;
+    else if (gender) score -= 5;
+    if (pref.age.some((a) => labels.includes(a))) score += 3;
+    for (const k of pref.keywords) if (labels.includes(k)) score += 2;
+    if (labels.includes(langName)) score += 3;
+    if (used.has(v.voice_id)) score -= 4;
+    return { v, score };
+  });
+  scored.sort((a, b) => b.score - a.score);
+  const chosen = scored[0].v.voice_id;
+  elevenAssigned.set(key, chosen);
+  return chosen;
 }
 
 async function synthesizeElevenLabs(
   text: string,
   character: Character,
+  language: Language,
   outFile: string
 ): Promise<void> {
   const apiKey = process.env.ELEVENLABS_API_KEY;
   if (!apiKey) throw new Error("Falta ELEVENLABS_API_KEY");
-  const voiceId = elevenLabsVoice(character.voice);
+  const voiceId = await elevenLabsVoice(character.voice, language, apiKey);
   const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`, {
     method: "POST",
     headers: {
@@ -212,7 +292,7 @@ export async function synthesizeLine(
   let lastError: unknown;
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      if (provider === "elevenlabs") await synthesizeElevenLabs(line.text, character, outFile);
+      if (provider === "elevenlabs") await synthesizeElevenLabs(line.text, character, language, outFile);
       else if (provider === "openai") await synthesizeOpenAI(line.text, character, language, outFile);
       else await synthesizeEdge(line.text, character, language, outFile, attempt === 2);
       return { filePath: outFile };
