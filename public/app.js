@@ -21,7 +21,14 @@ async function loadConfig() {
   if (cfg.demoMode) msgs.push("DEMO_MODE actiu: totes les feines fan servir el guió d'exemple.");
   if (msgs.length) { warn.textContent = msgs.join(" "); warn.classList.remove("hidden"); }
   if (cfg.brandHandle && !$("#brand").value) $("#brand").value = cfg.brandHandle;
+  // Idioma: l'última tria de l'usuari; si no n'hi ha, el del .env (DEFAULT_LANGUAGE)
+  let remembered = null;
+  try { remembered = localStorage.getItem("foodtalk.language"); } catch {}
+  $("#form").language.value = remembered || cfg.defaultLanguage || "ca";
 }
+$("#form").language.addEventListener("change", (e) => {
+  try { localStorage.setItem("foodtalk.language", e.target.value); } catch {}
+});
 
 // ---- imatge -----------------------------------------------------------------
 const drop = $("#drop");

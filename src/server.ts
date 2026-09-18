@@ -86,6 +86,7 @@ app.get("/api/config", (_req, res) => {
     hasOpenAI: Boolean(process.env.OPENAI_API_KEY),
     demoMode: DEMO_MODE,
     brandHandle: process.env.BRAND_HANDLE || "",
+    defaultLanguage: ["ca", "es", "en"].includes(process.env.DEFAULT_LANGUAGE || "") ? process.env.DEFAULT_LANGUAGE : "ca",
   });
 });
 

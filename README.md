@@ -62,6 +62,7 @@ Per retocar l'estil del vídeo en directe (colors, fonts, disposició) obre l'es
 | `RENDER_CONCURRENCY` | Pestanyes de render en paral·lel. Per defecte la meitat dels nuclis. |
 | `PORT` | Port del servidor web (3000). |
 | `BRAND_HANDLE` | Text de marca per defecte per a la targeta final, p. ex. `@elmeunegoci`. |
+| `DEFAULT_LANGUAGE` | Idioma preseleccionat a la web (`ca`, `es` o `en`). La web també recorda l'última tria. |
 | `DEMO_MODE=1` | Totes les feines fan servir el guió d'exemple (per provar sense clau). |
 
 **Música de fons:** deixa fitxers `.mp3` a `assets/music/` i se'n triarà un a l'atzar a volum baix. No se n'inclou cap per qüestions de llicència.
