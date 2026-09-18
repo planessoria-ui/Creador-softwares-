@@ -57,6 +57,10 @@ Personatges a partir de la imatge ("source": "image"):
 - Quan hi hagi personatges amb source "image", omple "image_character" amb la cara i la boca del personatge dins de la imatge, en coordenades de 0 a 1 (x cap a la dreta, y cap avall, relatives a l'amplada i l'alçada totals). Sigues precís: "mouth" és el centre de la boca i la seva amplada; "face" és el requadre de la cara sencera. Posa "image_role" a "backdrop" perquè l'escena de la imatge quedi de fons.
 - Si no hi ha cap personatge amb source "image", posa "image_character" a null.
 
+Camps per a vídeo generat per IA (s'omplen sempre, són curts):
+- "shot" de cada línia: en anglès, una frase per a un model imatge→vídeo: què fa el personatge mentre parla (gest, expressió), un moviment de càmera suau i com pren vida l'ambient (vent, llum, gent al fons...). Sense text escrit ni subtítols.
+- "look" de cada variant (source "image" que no és la primera): en anglès, com es diferencia de l'original mantenint el mateix menjar, estil i escena (p. ex. "same banana character but wearing sunglasses and a blue jacket, slightly younger, cocky smile"). Cadena buida per a l'original i per als dibuixats.
+
 Retorna només el guió en el format estructurat demanat.`;
 }
 
@@ -79,6 +83,9 @@ function buildUserPrompt(opts: GenerationOptions, hasImage: boolean): string {
       : "No hi ha imatge: inventa l'escena a partir del prompt, posa image_role a 'hidden', image_character a null i tots els personatges amb source 'drawn'.",
     hasImage && opts.characterStyle === "image"
       ? "MODE IMATGE: el protagonista ha de ser el personatge que surt a la imatge (source 'image') i, si hi ha més personatges del mateix menjar, també han de ser variants de la imatge (source 'image'). Omple image_character."
+      : "",
+    hasImage && opts.characterStyle === "video"
+      ? "MODE VÍDEO IA: la foto sencera s'animarà amb un model de vídeo. TOTS els personatges han de tenir source 'image': el primer és exactament el de la foto i els altres són variants seves (omple 'look'). Cuida molt els 'shot' de cada línia. Omple image_character."
       : "",
     hasImage && opts.characterStyle === "drawn"
       ? "Tots els personatges han de ser dibuixats (source 'drawn'); image_character a null."
@@ -263,6 +270,7 @@ export function demoScript(language: GenerationOptions["language"] = "ca"): Scri
         voice: "energetic_male",
         accessory: "none",
         source: "drawn",
+        look: "",
       },
       {
         id: "alvocat",
@@ -273,6 +281,7 @@ export function demoScript(language: GenerationOptions["language"] = "ca"): Scri
         voice: "sassy_female",
         accessory: "sunglasses",
         source: "drawn",
+        look: "",
       },
     ],
     lines: texts.lines.map(([speaker, text, emotion, action]) => ({
@@ -280,6 +289,7 @@ export function demoScript(language: GenerationOptions["language"] = "ca"): Scri
       text,
       emotion: emotion as Script["lines"][number]["emotion"],
       action: action as Script["lines"][number]["action"],
+      shot: "",
     })),
     punchline_index: 5,
     cta: texts.cta,

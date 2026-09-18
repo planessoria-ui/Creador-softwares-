@@ -38,7 +38,9 @@ Opcions:
   -t, --tone         witty | absurd | sarcastic | wholesome | dramatic | promo
   -s, --seconds      durada objectiu 15-60 (per defecte 40)
       --tts          auto | elevenlabs | openai | edge | silent
-      --style        auto | image | drawn  (image: el personatge de la imatge, retallat i animat)
+      --style        auto | image | drawn | video
+                     image: el personatge de la imatge, retallat i animat (gratuït)
+                     video: tota la foto animada amb fal.ai (cal FAL_KEY, de pagament)
       --brand        text de marca per a la targeta final, p. ex. @elmeunegoci
       --platforms    reel,tiktok (per defecte tots dos)
       --script       fitxer script.json ja generat (salta la crida a Claude)

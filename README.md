@@ -62,6 +62,7 @@ Per retocar l'estil del vídeo en directe (colors, fonts, disposició) obre l'es
 | `RENDER_CONCURRENCY` | Pestanyes de render en paral·lel. Per defecte la meitat dels nuclis. |
 | `PORT` | Port del servidor web (3000). |
 | `BRAND_HANDLE` | Text de marca per defecte per a la targeta final, p. ex. `@elmeunegoci`. |
+| `FAL_KEY` | Clau de fal.ai per al mode vídeo IA (de pagament per ús). |
 | `DEFAULT_LANGUAGE` | Idioma preseleccionat a la web (`ca`, `es` o `en`). La web també recorda l'última tria. |
 | `DEMO_MODE=1` | Totes les feines fan servir el guió d'exemple (per provar sense clau). |
 
@@ -72,6 +73,18 @@ Per retocar l'estil del vídeo en directe (colors, fonts, disposició) obre l'es
 Si la imatge mostra un personatge de menjar amb cara (una il·lustració, una imatge generada per IA…), el programa el pot fer servir com a protagonista: Claude localitza la cara i la boca, el personatge es retalla del fons amb un model d'IA local (`@imgly/background-removal-node`, sense cap clau), s'anima sobre l'escena original i se li superposa una boca sincronitzada amb la veu. Els altres personatges del mateix menjar són variants del retall (girats, amb un canvi de to i un accessori).
 
 A la web es tria a **«Personatges a partir de»**: *Automàtic* (Claude decideix segons la imatge), *La meva imatge* o *Dibuixos cartoon*. Un cop generat, a l'apartat del guió pots corregir la posició i l'amplada de la boca fent clic sobre la imatge i tornar a renderitzar.
+
+## Mode vídeo IA: tota la foto cobra vida (fal.ai)
+
+Amb una clau de [fal.ai](https://fal.ai) (`FAL_KEY` al `.env`) i l'opció **«Vídeo IA»**, la foto sencera s'anima amb models generatius:
+
+1. Claude escriu el guió i, per a cada rèplica, una descripció del pla (`shot`) i, per a cada personatge secundari, com es diferencia de l'original (`look`).
+2. **nano-banana** (edició d'imatge) genera les variants del personatge a partir de la teva foto: «el mateix plàtan però amb ulleres de sol i americana blava».
+3. **Kling v3** (imatge → vídeo) genera un clip de 3-15 s per a cada rèplica a partir de la foto de qui parla, seguint el `shot`.
+4. **sync-lipsync** sincronitza els llavis del clip amb la veu d'ElevenLabs/OpenAI/Edge.
+5. Remotion munta els clips (pla i contraplà), el ganxo, els subtítols i la targeta final.
+
+Cost orientatiu: entre 4 i 8 € per vídeo de 45 s (depèn del nombre de rèpliques), i entre 5 i 15 minuts de generació. Els clips i les variants es desen a `output/<id>/clips` i `output/<id>/characters` i es reutilitzen si tornes a renderitzar sense canviar la línia; el mateix passa amb els àudios. Els models es poden canviar amb `FAL_I2V_MODEL`, `FAL_LIPSYNC_MODEL` i `FAL_IMAGE_EDIT_MODEL`.
 
 ## Com es fa el guió (i com ajustar-lo)
 
@@ -95,6 +108,8 @@ src/
     script.ts          guió amb Claude (visió + structured outputs)
     tts.ts             veus: ElevenLabs / OpenAI / Edge / silenci
     cutout.ts          retall del personatge de la imatge (mode imatge)
+    falvideo.ts        mode vídeo IA: variants, clips i sincronització labial amb fal.ai
+    media.ts           durada d'àudios/vídeos amb l'ffmpeg de Remotion
     render.ts          empaqueta i renderitza amb Remotion
     index.ts           orquestra una feina de principi a fi
   remotion/

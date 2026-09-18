@@ -1,10 +1,11 @@
 import React from "react";
-import { AbsoluteFill, Audio, Sequence, interpolate, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
+import { AbsoluteFill, Audio, Img, OffthreadVideo, Sequence, interpolate, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import { useAudioData, visualizeAudio } from "@remotion/media-utils";
 import type { Character, FoodTalkProps, ImageCharacter as ImageCharacterDef } from "../shared/schema";
 import { buildTimeline, type Segment } from "../shared/timeline";
 import { Background } from "./components/Background";
 import { Bubble } from "./components/Bubble";
+import { Caption } from "./components/Caption";
 import { FoodCharacter } from "./components/Character";
 import { ImageCharacter } from "./components/ImageCharacter";
 import { EndCard } from "./components/EndCard";
@@ -168,7 +169,97 @@ const MouthProbe: React.FC<{ segment: Segment; playbackRate: number; children: M
   );
 };
 
+/** Un clip generat per IA (ja amb la boca sincronitzada) a pantalla completa. */
+const ClipSegment: React.FC<{ src: string; durationInFrames: number }> = ({ src, durationInFrames }) => {
+  const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
+  const fadeIn = interpolate(frame, [0, 6], [0, 1], { extrapolateRight: "clamp" });
+  const zoom = 1 + interpolate(frame, [0, Math.max(1, durationInFrames)], [0, 0.04], { extrapolateRight: "clamp" });
+  return (
+    <AbsoluteFill style={{ opacity: fadeIn }}>
+      <OffthreadVideo
+        src={src}
+        muted
+        style={{ width: "100%", height: "100%", objectFit: "cover", transform: `scale(${zoom})` }}
+        transparent={false}
+        toneMapped={false}
+        playbackRate={1}
+        startFrom={0}
+        endAt={durationInFrames + fps}
+      />
+    </AbsoluteFill>
+  );
+};
+
+/** Mode vídeo IA: la foto animada (un clip per rèplica), subtítols, ganxo i targeta final. */
+const CinematicVideo: React.FC<FoodTalkProps> = (props) => {
+  const { script, lines, imageUrl, platform, brandHandle, language, playbackRate, musicUrl } = props;
+  const frame = useCurrentFrame();
+  const { timeline, script: finalScript } = buildTimeline(script, lines);
+  const layout = layoutFor(platform);
+  const inEndCard = frame >= timeline.endCardFrom;
+  const speakerColor = finalScript.characters[0]?.color ?? "#ff7043";
+  const heroZoom = 1 + interpolate(frame, [0, timeline.hookFrames + 30], [0, 0.06], { extrapolateRight: "clamp" });
+
+  return (
+    <AbsoluteFill style={{ overflow: "hidden", background: "#000" }}>
+      <style>{FONT_CSS}</style>
+      {/* Durant el ganxo: la foto original amb un zoom lent */}
+      {imageUrl && frame < timeline.hookFrames + 12 && (
+        <Img src={imageUrl} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", transform: `scale(${heroZoom})` }} />
+      )}
+      {musicUrl && <Audio src={/^https?:/.test(musicUrl) ? musicUrl : staticFile(musicUrl)} volume={0.1} loop />}
+
+      {timeline.segments.map((seg) => {
+        const idx = finalScript.characters.findIndex((c) => c.id === seg.line.speaker);
+        const character = finalScript.characters[Math.max(0, idx)];
+        return (
+          <Sequence key={seg.index} from={seg.from} durationInFrames={seg.durationInFrames + 8} layout="none">
+            {seg.line.videoUrl ? (
+              <ClipSegment src={seg.line.videoUrl} durationInFrames={seg.durationInFrames} />
+            ) : (
+              imageUrl && <Img src={imageUrl} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }} />
+            )}
+            {seg.line.audioUrl && <Audio src={seg.line.audioUrl} playbackRate={playbackRate} />}
+            <div style={{ position: "absolute", inset: 0, zIndex: 5 }}>
+              <Caption
+                text={seg.line.text}
+                name={character.name}
+                color={character.color}
+                bottom={layout.safe.bottom + 40}
+                width={layout.usableW}
+                centerX={layout.centerX}
+                durationInFrames={seg.durationInFrames}
+                isPunchline={seg.index === finalScript.punchline_index}
+              />
+            </div>
+          </Sequence>
+        );
+      })}
+
+      <Sequence from={0} durationInFrames={timeline.hookFrames + 30} layout="none">
+        <div style={{ position: "absolute", inset: 0, zIndex: 6 }}>
+          <Hook text={finalScript.hook} top={layout.hookTop + 80} centerX={layout.centerX} width={layout.usableW} outFrame={timeline.hookFrames + 18} />
+        </div>
+      </Sequence>
+
+      {inEndCard && (
+        <Sequence from={timeline.endCardFrom} layout="none">
+          <div style={{ position: "absolute", inset: 0, zIndex: 10 }}>
+            <EndCard cta={finalScript.cta} brandHandle={brandHandle} imageUrl={imageUrl} color={speakerColor} language={language} safeTop={layout.safe.top} safeBottom={layout.safe.bottom} />
+          </div>
+        </Sequence>
+      )}
+    </AbsoluteFill>
+  );
+};
+
 export const FoodTalk: React.FC<FoodTalkProps> = (props) => {
+  if (props.mode === "video") return <CinematicVideo {...props} />;
+  return <StageVideo {...props} />;
+};
+
+const StageVideo: React.FC<FoodTalkProps> = (props) => {
   const { script, lines, imageUrl, cutoutUrl, platform, brandHandle, language, playbackRate, musicUrl } = props;
   const frame = useCurrentFrame();
   const { timeline, script: finalScript } = buildTimeline(script, lines);

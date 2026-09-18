@@ -82,6 +82,11 @@ export const CharacterSchema = z.object({
     .describe(
       "drawn: personatge dibuixat segons 'kind'. image: és el personatge retallat de la imatge de l'usuari (el primer és l'original; els següents, variants semblants)"
     ),
+  look: z
+    .string()
+    .describe(
+      "Només per a variants (source image que no són l'original): en anglès, com es diferencia de l'original (roba, accessoris, edat, expressió), mantenint el mateix tipus de menjar i estil. Cadena buida per a l'original i els dibuixats"
+    ),
 });
 export type Character = z.infer<typeof CharacterSchema>;
 
@@ -109,6 +114,11 @@ export const LineSchema = z.object({
   action: z
     .enum(["none", "jump", "shake", "spin", "lean_in", "facepalm", "point"])
     .describe("Petita animació que acompanya la frase"),
+  shot: z
+    .string()
+    .describe(
+      "En anglès, una frase que descriu el pla per a un model de vídeo: què fa el personatge mentre diu la frase (gest, expressió), moviment de càmera i vida de l'ambient"
+    ),
 });
 export type Line = z.infer<typeof LineSchema>;
 
@@ -149,7 +159,7 @@ export const GenerationOptionsSchema = z.object({
   targetSeconds: z.number().int().min(15).max(60).default(40),
   ttsProvider: z.enum(["auto", "elevenlabs", "openai", "edge", "silent"]).default("auto"),
   /** auto: si la imatge mostra un personatge de menjar, s'usa retallat; drawn: sempre dibuixats; image: sempre la imatge */
-  characterStyle: z.enum(["auto", "drawn", "image"]).default("auto"),
+  characterStyle: z.enum(["auto", "drawn", "image", "video"]).default("auto"),
   brandHandle: z.string().default(""),
   platforms: z.array(z.enum(["reel", "tiktok"])).min(1).default(["reel", "tiktok"]),
 });
@@ -161,6 +171,8 @@ export type TimedLine = Line & {
   audioUrl: string | null;
   /** Durada real de l'àudio en segons (o estimada en mode silenciós) */
   durationSeconds: number;
+  /** Mode vídeo IA: clip generat per a aquesta línia (amb la boca sincronitzada) */
+  videoUrl?: string | null;
 };
 
 export type Platform = "reel" | "tiktok";
@@ -172,6 +184,8 @@ export type FoodTalkProps = {
   imageUrl: string | null;
   /** PNG amb transparència del personatge retallat de la imatge (mode imatge); null si no n'hi ha */
   cutoutUrl: string | null;
+  /** stage: personatges (dibuixats o retallats) sobre un escenari; video: un clip generat per IA per línia */
+  mode: "stage" | "video";
   platform: Platform;
   brandHandle: string;
   language: "ca" | "es" | "en";

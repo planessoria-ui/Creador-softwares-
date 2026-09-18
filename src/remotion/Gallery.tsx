@@ -28,7 +28,7 @@ export const Gallery: React.FC = () => {
         <div key={kind} style={{ position: "absolute", left: (i % cols) * cell, top: 40 + Math.floor(i / cols) * 250, width: cell, textAlign: "center" }}>
           <div style={{ display: "flex", justifyContent: "center" }}>
             <FoodCharacter
-              character={{ id: kind, name: kind, kind, color: COLORS[kind] ?? "#ff7043", personality: "", voice: "warm_male", accessory: i % 4 === 0 ? "glasses" : i % 4 === 1 ? "hat" : i % 4 === 2 ? "none" : "bowtie", source: "drawn" }}
+              character={{ id: kind, name: kind, kind, color: COLORS[kind] ?? "#ff7043", personality: "", voice: "warm_male", accessory: i % 4 === 0 ? "glasses" : i % 4 === 1 ? "hat" : i % 4 === 2 ? "none" : "bowtie", source: "drawn", look: "" }}
               mouth={mouth}
               emotion={emotion}
               active={i % 2 === 0}

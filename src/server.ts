@@ -10,6 +10,7 @@ import { GenerationOptionsSchema, ScriptSchema } from "./shared/schema";
 import { PROJECT_ROOT, getBundle } from "./pipeline/render";
 import { normalizeScript } from "./pipeline/script";
 import { OUTPUT_ROOT, jobDir, loadJobs, runJob, saveJob, type Job } from "./pipeline/index";
+import { hasFalKey } from "./pipeline/falvideo";
 
 const PORT = Number(process.env.PORT || 3000);
 const DEMO_MODE = process.env.DEMO_MODE === "1";
@@ -87,6 +88,7 @@ app.get("/api/config", (_req, res) => {
     hasClaudeKey: Boolean(process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_AUTH_TOKEN),
     hasElevenLabs: Boolean(process.env.ELEVENLABS_API_KEY),
     hasOpenAI: Boolean(process.env.OPENAI_API_KEY),
+    hasFal: hasFalKey(),
     demoMode: DEMO_MODE,
     brandHandle: process.env.BRAND_HANDLE || "",
     defaultLanguage: ["ca", "es", "en"].includes(process.env.DEFAULT_LANGUAGE || "") ? process.env.DEFAULT_LANGUAGE : "ca",
@@ -152,6 +154,11 @@ app.post("/api/jobs/:id/rerender", (req, res) => {
   if (source.imageFile) fs.copyFileSync(path.join(jobDir(source.id), source.imageFile), path.join(dir, source.imageFile));
   const sourceCutout = path.join(jobDir(source.id), "cutout.png");
   if (fs.existsSync(sourceCutout)) fs.copyFileSync(sourceCutout, path.join(dir, "cutout.png"));
+  // Mode vídeo IA: els clips i variants ja generats es reutilitzen si la línia no ha canviat
+  for (const sub of ["clips", "characters", "audio"]) {
+    const from = path.join(jobDir(source.id), sub);
+    if (fs.existsSync(from)) fs.cpSync(from, path.join(dir, sub), { recursive: true });
+  }
   // Només se sobreescriuen les opcions que arriben explícitament (els valors per defecte de l'esquema no han de trepitjar les de la feina original).
   const options = { ...source.options };
   if (req.body.options && typeof req.body.options === "object") {

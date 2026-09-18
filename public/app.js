@@ -19,6 +19,7 @@ async function loadConfig() {
   if (!cfg.hasClaudeKey && !cfg.demoMode) msgs.push("No hi ha ANTHROPIC_API_KEY: només funcionarà el botó de prova amb guió d'exemple.");
   if (!cfg.hasElevenLabs && !cfg.hasOpenAI) msgs.push("Sense claus d'ElevenLabs ni OpenAI: les veus es faran amb el servei gratuït d'Edge (qualitat correcta però menys expressiva).");
   if (cfg.demoMode) msgs.push("DEMO_MODE actiu: totes les feines fan servir el guió d'exemple.");
+  if (!cfg.hasFal) msgs.push("Sense FAL_KEY: l'opció «Vídeo IA» (animar tota la foto) no està disponible.");
   if (msgs.length) { warn.textContent = msgs.join(" "); warn.classList.remove("hidden"); }
   if (cfg.brandHandle && !$("#brand").value) $("#brand").value = cfg.brandHandle;
   // Idioma: l'última tria de l'usuari; si no n'hi ha, el del .env (DEFAULT_LANGUAGE)
@@ -75,6 +76,10 @@ async function submit(demo) {
   const platforms = [...$("#form").querySelectorAll("input[name=platforms]:checked")];
   if (platforms.length === 0) { alert("Tria almenys un format."); return; }
   if (!demo && !$("#prompt").value.trim()) { alert("Escriu una idea o prompt."); return; }
+  if ($("#form").characterStyle.value === "video") {
+    if (!imageInput.files[0]) { alert("El mode Vídeo IA necessita una imatge."); return; }
+    if (!confirm("El mode Vídeo IA genera els clips amb fal.ai i té un cost aproximat de 4-8 € per vídeo. Pot trigar entre 5 i 15 minuts. Continuar?")) return;
+  }
   $("#submit").disabled = true;
   try {
     const res = await fetch("/api/jobs", { method: "POST", body: collectForm(demo) });
