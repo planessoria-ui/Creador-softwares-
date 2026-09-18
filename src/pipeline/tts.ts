@@ -128,9 +128,9 @@ const EDGE_VOICES: Record<Language, Record<VoiceArchetype, EdgeVoice>> = {
     grumpy_old_male: { name: "ca-ES-EnricNeural", pitch: "-18%", rate: "-8%" },
     warm_female: { name: "ca-ES-JoanaNeural", pitch: "+0%", rate: "+5%" },
     energetic_female: { name: "ca-ES-JoanaNeural", pitch: "+8%", rate: "+15%" },
-    sassy_female: { name: "ca-ES-AlbaNeural", pitch: "+4%", rate: "+10%" },
+    sassy_female: { name: "ca-ES-JoanaNeural", pitch: "-6%", rate: "+12%" },
     squeaky: { name: "ca-ES-JoanaNeural", pitch: "+35%", rate: "+18%" },
-    kid: { name: "ca-ES-AlbaNeural", pitch: "+25%", rate: "+10%" },
+    kid: { name: "ca-ES-JoanaNeural", pitch: "+25%", rate: "+10%" },
   },
   es: {
     deep_male: { name: "es-ES-AlvaroNeural", pitch: "-12%", rate: "+0%" },
@@ -160,13 +160,22 @@ function escapeXml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+/** Veu segura per idioma, per si la veu triada no està disponible al servei d'Edge. */
+const EDGE_FALLBACK_VOICE: Record<Language, string> = {
+  ca: "ca-ES-JoanaNeural",
+  es: "es-ES-ElviraNeural",
+  en: "en-US-JennyNeural",
+};
+
 async function synthesizeEdge(
   text: string,
   character: Character,
   language: Language,
-  outFile: string
+  outFile: string,
+  useFallbackVoice = false
 ): Promise<void> {
-  const voice = EDGE_VOICES[language][character.voice];
+  const chosen = EDGE_VOICES[language][character.voice];
+  const voice = useFallbackVoice ? { name: EDGE_FALLBACK_VOICE[language], pitch: "+0%", rate: "+5%" } : chosen;
   const tts = new MsEdgeTTS();
   await tts.setMetadata(voice.name, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3);
   const { audioStream } = tts.toStream(escapeXml(text), { pitch: voice.pitch, rate: voice.rate });
@@ -205,7 +214,7 @@ export async function synthesizeLine(
     try {
       if (provider === "elevenlabs") await synthesizeElevenLabs(line.text, character, outFile);
       else if (provider === "openai") await synthesizeOpenAI(line.text, character, language, outFile);
-      else await synthesizeEdge(line.text, character, language, outFile);
+      else await synthesizeEdge(line.text, character, language, outFile, attempt === 2);
       return { filePath: outFile };
     } catch (err) {
       lastError = err;
