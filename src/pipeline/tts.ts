@@ -43,7 +43,7 @@ const ELEVENLABS_DEFAULT_VOICES: Record<VoiceArchetype, string> = {
   kid: "SAz9YHcvj6GT2YYXdXww", // River
 };
 
-type ElevenVoice = { voice_id: string; name: string; labels?: Record<string, string> };
+type ElevenVoice = { voice_id: string; name: string; category?: string; labels?: Record<string, string> };
 
 /** Preferències per arquetip: paraules clau que sumen punts si apareixen a les etiquetes de la veu. */
 const ELEVENLABS_PREFERENCES: Record<VoiceArchetype, { gender: "male" | "female" | "any"; age: string[]; keywords: string[] }> = {
@@ -77,6 +77,8 @@ async function listElevenLabsVoices(apiKey: string): Promise<ElevenVoice[]> {
 }
 
 const elevenAssigned = new Map<string, string>(); // `${archetype}:${language}` -> voice_id
+/** Veus que l'API ha rebutjat (p. ex. veus de la biblioteca en pla gratuït): no es tornen a triar. */
+const elevenBlocked = new Set<string>();
 
 /**
  * Tria la veu d'ElevenLabs per a un arquetip: 1) variable d'entorn, 2) veu per defecte si existeix al compte,
@@ -95,6 +97,7 @@ async function elevenLabsVoice(archetype: VoiceArchetype, language: Language, ap
   } catch {
     return ELEVENLABS_DEFAULT_VOICES[archetype];
   }
+  voices = voices.filter((v) => !elevenBlocked.has(v.voice_id));
   const ids = new Set(voices.map((v) => v.voice_id));
   const preferred = ELEVENLABS_DEFAULT_VOICES[archetype];
   if (ids.has(preferred)) {
@@ -115,6 +118,8 @@ async function elevenLabsVoice(archetype: VoiceArchetype, language: Language, ap
     if (pref.age.some((a) => labels.includes(a))) score += 3;
     for (const k of pref.keywords) if (labels.includes(k)) score += 2;
     if (labels.includes(langName)) score += 3;
+    // Les veus "premade" funcionen a tots els plans; les de la biblioteca només als de pagament.
+    if ((v.category ?? "").toLowerCase() === "premade") score += 4;
     if (used.has(v.voice_id)) score -= 4;
     return { v, score };
   });
@@ -147,7 +152,13 @@ async function synthesizeElevenLabs(
     }),
   });
   if (!res.ok) {
-    throw new Error(`ElevenLabs ${res.status}: ${(await res.text()).slice(0, 300)}`);
+    const body = (await res.text()).slice(0, 300);
+    if (res.status === 402 || res.status === 404) {
+      // Veu no utilitzable amb aquest compte: la bloquegem perquè el següent intent en triï una altra.
+      elevenBlocked.add(voiceId);
+      for (const [k, v] of elevenAssigned) if (v === voiceId) elevenAssigned.delete(k);
+    }
+    throw new Error(`ElevenLabs ${res.status}: ${body}`);
   }
   fs.writeFileSync(outFile, Buffer.from(await res.arrayBuffer()));
 }
