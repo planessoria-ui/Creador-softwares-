@@ -1,11 +1,12 @@
 import React from "react";
 import { AbsoluteFill, Audio, Sequence, interpolate, staticFile, useCurrentFrame, useVideoConfig } from "remotion";
 import { useAudioData, visualizeAudio } from "@remotion/media-utils";
-import type { Character, FoodTalkProps } from "../shared/schema";
+import type { Character, FoodTalkProps, ImageCharacter as ImageCharacterDef } from "../shared/schema";
 import { buildTimeline, type Segment } from "../shared/timeline";
 import { Background } from "./components/Background";
 import { Bubble } from "./components/Bubble";
 import { FoodCharacter } from "./components/Character";
+import { ImageCharacter } from "./components/ImageCharacter";
 import { EndCard } from "./components/EndCard";
 import { Hook } from "./components/Hook";
 import { ImageCard } from "./components/ImageCard";
@@ -53,6 +54,8 @@ type StageProps = {
   centerX: number;
   bottom: number;
   usableW: number;
+  cutoutUrl: string | null;
+  imageCharacter: ImageCharacterDef | null;
 };
 
 function positionsFor(n: number, centerX: number, usableW: number): number[] {
@@ -61,14 +64,36 @@ function positionsFor(n: number, centerX: number, usableW: number): number[] {
   return [centerX - usableW * 0.34, centerX, centerX + usableW * 0.34];
 }
 
-const Stage: React.FC<StageProps> = ({ characters, segment, mouth, size, centerX, bottom, usableW }) => {
+const Stage: React.FC<StageProps> = ({ characters, segment, mouth, size, centerX, bottom, usableW, cutoutUrl, imageCharacter }) => {
   const frame = useCurrentFrame();
   const xs = positionsFor(characters.length, centerX, usableW);
+  let imageVariant = 0;
   return (
     <>
       {characters.map((c, i) => {
         const active = segment?.line.speaker === c.id;
         const facing: 1 | -1 = xs[i] <= centerX ? 1 : -1;
+        if (c.source === "image" && cutoutUrl && imageCharacter) {
+          const variant = imageVariant++;
+          const height = size * 1.55;
+          return (
+            <div key={c.id} style={{ position: "absolute", left: xs[i], top: bottom - height, transform: "translateX(-50%)", zIndex: active ? 3 : 2 }}>
+              <ImageCharacter
+                character={c}
+                cutoutUrl={cutoutUrl}
+                geometry={imageCharacter}
+                variant={variant}
+                mouth={active ? mouth : 0}
+                active={Boolean(active)}
+                lineFrame={active ? frame - segment!.from : null}
+                action={active ? segment!.line.action : "none"}
+                height={height}
+                facing={characters.length === 1 ? 1 : facing}
+                seed={`${c.id}-${i}`}
+              />
+            </div>
+          );
+        }
         return (
           <div key={c.id} style={{ position: "absolute", left: xs[i] - size / 2, top: bottom - size, zIndex: active ? 3 : 2 }}>
             <FoodCharacter
@@ -144,7 +169,7 @@ const MouthProbe: React.FC<{ segment: Segment; playbackRate: number; children: M
 };
 
 export const FoodTalk: React.FC<FoodTalkProps> = (props) => {
-  const { script, lines, imageUrl, platform, brandHandle, language, playbackRate, musicUrl } = props;
+  const { script, lines, imageUrl, cutoutUrl, platform, brandHandle, language, playbackRate, musicUrl } = props;
   const frame = useCurrentFrame();
   const { timeline, script: finalScript } = buildTimeline(script, lines);
   const layout = layoutFor(platform);
@@ -152,7 +177,8 @@ export const FoodTalk: React.FC<FoodTalkProps> = (props) => {
   const n = finalScript.characters.length;
   const size = n === 1 ? 640 : n === 2 ? 560 : 420;
   const xs = positionsFor(n, layout.centerX, layout.usableW);
-  const showCard = Boolean(imageUrl) && finalScript.image_role === "product";
+  const usesImage = Boolean(cutoutUrl && finalScript.image_character && finalScript.characters.some((c) => c.source === "image"));
+  const showCard = Boolean(imageUrl) && finalScript.image_role === "product" && !usesImage;
   const stageBottom = layout.stageBottom;
 
   const current = timeline.segments.find((s) => frame >= s.from && frame < s.from + s.durationInFrames) ?? null;
@@ -168,13 +194,15 @@ export const FoodTalk: React.FC<FoodTalkProps> = (props) => {
       centerX={layout.centerX}
       bottom={stageBottom}
       usableW={layout.usableW}
+      cutoutUrl={usesImage ? cutoutUrl : null}
+      imageCharacter={usesImage ? finalScript.image_character : null}
     />
   );
 
   return (
     <AbsoluteFill style={{ overflow: "hidden" }}>
       <style>{FONT_CSS}</style>
-      <Background imageUrl={imageUrl} role={finalScript.image_role} colors={finalScript.characters.map((c) => c.color)} />
+      <Background imageUrl={imageUrl} role={usesImage ? "backdrop" : finalScript.image_role} colors={finalScript.characters.map((c) => c.color)} />
 
       {showCard && imageUrl && (
         <ImageCard imageUrl={imageUrl} top={layout.cardTop} height={layout.cardH} centerX={layout.centerX} width={layout.usableW} />
@@ -201,7 +229,8 @@ export const FoodTalk: React.FC<FoodTalkProps> = (props) => {
         const idx = finalScript.characters.findIndex((c) => c.id === seg.line.speaker);
         const character = finalScript.characters[Math.max(0, idx)];
         const anchorX = xs[Math.max(0, idx)];
-        const anchorY = stageBottom - size * 0.92;
+        const isImage = usesImage && character.source === "image";
+        const anchorY = stageBottom - (isImage ? size * 1.55 * (finalScript.image_character?.face.y ?? 0.1) + 10 : size * 0.92);
         return (
           <Sequence key={seg.index} from={seg.from} durationInFrames={seg.durationInFrames + 8} layout="none">
             <div style={{ position: "absolute", inset: 0, zIndex: 5, pointerEvents: "none" }}>

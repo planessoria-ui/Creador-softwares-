@@ -17,6 +17,7 @@ const { values } = parseArgs({
     tone: { type: "string", short: "t", default: "witty" },
     seconds: { type: "string", short: "s", default: "40" },
     tts: { type: "string", default: "auto" },
+    style: { type: "string", default: "auto" },
     brand: { type: "string", default: process.env.BRAND_HANDLE || "" },
     platforms: { type: "string", default: "reel,tiktok" },
     script: { type: "string" },
@@ -37,6 +38,7 @@ Opcions:
   -t, --tone         witty | absurd | sarcastic | wholesome | dramatic | promo
   -s, --seconds      durada objectiu 15-60 (per defecte 40)
       --tts          auto | elevenlabs | openai | edge | silent
+      --style        auto | image | drawn  (image: el personatge de la imatge, retallat i animat)
       --brand        text de marca per a la targeta final, p. ex. @elmeunegoci
       --platforms    reel,tiktok (per defecte tots dos)
       --script       fitxer script.json ja generat (salta la crida a Claude)
@@ -52,6 +54,7 @@ const options = GenerationOptionsSchema.parse({
   tone: values.tone,
   targetSeconds: Number(values.seconds),
   ttsProvider: values.tts,
+  characterStyle: values.style,
   brandHandle: values.brand,
   platforms: String(values.platforms).split(",").map((s) => s.trim()).filter(Boolean),
 });

@@ -215,37 +215,35 @@ const Face: React.FC<{
   );
 };
 
-export const FoodCharacter: React.FC<Props> = ({
-  character,
-  mouth,
-  emotion,
-  active,
-  lineFrame,
-  action,
-  size,
-  facing,
-  seed,
-}) => {
+export type MotionInput = {
+  active: boolean;
+  mouth: number;
+  lineFrame: number | null;
+  action: Line["action"];
+  facing: 1 | -1;
+  seed: string;
+};
+
+/**
+ * Moviment comú a tots els personatges (dibuixats o retallats d'una imatge):
+ * respiració, balanceig, bot en parlar, entrada amb molla i accions puntuals.
+ */
+export function useCharacterMotion({ active, mouth, lineFrame, action, facing, seed }: MotionInput) {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-  const def = FOODS[character.kind];
 
-  // Respiració / balanceig suau, desfasat per personatge
   const phase = random(seed) * Math.PI * 2;
   const breathe = Math.sin((frame / fps) * 2.2 + phase);
   const idleScaleY = 1 + breathe * 0.012;
   const idleRot = Math.sin((frame / fps) * 1.3 + phase) * 1.5;
 
-  // Parpelleig determinista cada ~3 s
   const blinkPeriod = Math.round(fps * (2.6 + random(seed + "b") * 1.4));
   const blinkPhase = Math.round(random(seed + "p") * blinkPeriod);
   const inBlink = (frame + blinkPhase) % blinkPeriod;
   const blink = inBlink < 4 ? interpolate(inBlink, [0, 2, 4], [0, 1, 0]) : 0;
 
-  // Bot quan parla: petit rebot rítmic
   const talkBob = active && mouth > 0.1 ? Math.sin(frame * 1.1) * 4 * mouth : 0;
 
-  // Accions puntuals al començar la línia
   let actionTransform = "";
   let eyesShut = 0;
   if (lineFrame !== null && lineFrame >= 0) {
@@ -289,8 +287,29 @@ export const FoodCharacter: React.FC<Props> = ({
   const dim = active ? 1 : 0.82;
   const appear = spring({ frame, fps, config: { damping: 12, stiffness: 120 } });
 
+  return {
+    transform: `scale(${appear * activeScale}) ${actionTransform} rotate(${idleRot}deg) scaleY(${idleScaleY}) translateY(${talkBob}px)`,
+    filter: `saturate(${dim}) brightness(${active ? 1 : 0.9})`,
+    blink,
+    eyesShut,
+    showArmPoint: action === "point" && lineFrame !== null && lineFrame >= 0,
+  };
+}
+
+export const FoodCharacter: React.FC<Props> = ({
+  character,
+  mouth,
+  emotion,
+  active,
+  lineFrame,
+  action,
+  size,
+  facing,
+  seed,
+}) => {
+  const def = FOODS[character.kind];
+  const motion = useCharacterMotion({ active, mouth, lineFrame, action, facing, seed });
   const bodyColor = character.color;
-  const showArmPoint = action === "point" && lineFrame !== null && lineFrame >= 0;
 
   return (
     <div
@@ -298,9 +317,8 @@ export const FoodCharacter: React.FC<Props> = ({
         width: size,
         height: size,
         transformOrigin: "50% 100%",
-        transform: `scale(${appear * activeScale}) ${actionTransform} rotate(${idleRot}deg) scaleY(${idleScaleY}) translateY(${talkBob}px)`,
-        filter: `saturate(${dim}) brightness(${active ? 1 : 0.9})`,
-        transition: "none",
+        transform: motion.transform,
+        filter: motion.filter,
       }}
     >
       <svg viewBox="0 0 200 200" width={size} height={size} style={{ overflow: "visible" }}>
@@ -313,7 +331,7 @@ export const FoodCharacter: React.FC<Props> = ({
         <g filter={`url(#sh-${character.id})`} transform={facing === -1 ? "" : "translate(200 0) scale(-1 1)"}>
           {def.body(bodyColor)}
         </g>
-        {showArmPoint && (
+        {motion.showArmPoint && (
           <g transform={`translate(${facing === 1 ? 168 : 32} 120)`}>
             <line x1={0} y1={0} x2={facing * 42} y2={-28} stroke={shade(bodyColor, -0.45)} strokeWidth={9} strokeLinecap="round" />
             <circle cx={facing * 46} cy={-31} r={9} fill={bodyColor} stroke={shade(bodyColor, -0.45)} strokeWidth={3} />
@@ -325,7 +343,7 @@ export const FoodCharacter: React.FC<Props> = ({
           scale={def.face.scale}
           mouth={active ? mouth : 0}
           emotion={emotion}
-          blink={Math.max(blink, eyesShut)}
+          blink={Math.max(motion.blink, motion.eyesShut)}
           color={bodyColor}
           facing={facing}
           accessory={character.accessory}

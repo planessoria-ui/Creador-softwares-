@@ -7,6 +7,7 @@ import {
   type TimedLine,
 } from "../shared/schema";
 import { demoScript, generateScript } from "./script";
+import { cutoutCharacter } from "./cutout";
 import { PROJECT_ROOT, renderVideo, serveDirectory } from "./render";
 import { estimateDurationSeconds, resolveProvider, synthesizeLine, type TtsProvider } from "./tts";
 
@@ -118,6 +119,20 @@ export async function runJob(job: Job, hooks: PipelineHooks = {}, useDemoScript 
     }
     const script = job.script;
 
+    // 1b. Retall del personatge de la imatge (mode imatge) --------------------
+    const usesImageCharacter = Boolean(imagePath && script.image_character && script.characters.some((c) => c.source === "image"));
+    const cutoutFile = "cutout.png";
+    if (usesImageCharacter && imagePath) {
+      const cutoutPath = path.join(dir, cutoutFile);
+      if (fs.existsSync(cutoutPath)) {
+        log("Retall del personatge ja existent: es reutilitza.");
+      } else {
+        update({ step: "Retallant el personatge de la imatge" });
+        const ok = await cutoutCharacter(imagePath, cutoutPath, log);
+        if (!ok) fs.copyFileSync(imagePath, cutoutPath);
+      }
+    }
+
     // 2. Veus ---------------------------------------------------------------
     let provider = resolveProvider(job.options.ttsProvider);
     update({ status: "voices", step: `Generant les veus (${provider})`, progress: 0, ttsProvider: provider });
@@ -174,6 +189,7 @@ export async function runJob(job: Job, hooks: PipelineHooks = {}, useDemoScript 
             script,
             lines,
             imageUrl: job.imageFile ? `${server.baseUrl}/${job.imageFile}` : null,
+            cutoutUrl: usesImageCharacter ? `${server.baseUrl}/${cutoutFile}` : null,
             platform,
             brandHandle: job.options.brandHandle,
             language: job.options.language,

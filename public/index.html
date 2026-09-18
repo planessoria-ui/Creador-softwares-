@@ -75,6 +75,13 @@
           <label>Marca / usuari
             <input name="brandHandle" id="brand" placeholder="@elmeunegoci" />
           </label>
+          <label>Personatges a partir de
+            <select name="characterStyle">
+              <option value="auto">Automàtic</option>
+              <option value="image">La meva imatge (retallada i animada)</option>
+              <option value="drawn">Dibuixos cartoon</option>
+            </select>
+          </label>
         </div>
 
         <fieldset class="platforms">
@@ -112,6 +119,11 @@
           <button type="button" id="copy" class="ghost">Copia</button>
         </div>
         <h3>Guió <small class="muted">(edita'l i torna a renderitzar sense tornar a demanar-lo a Claude)</small></h3>
+        <div id="mouth-editor" class="hidden">
+          <h4>Posició de la boca del personatge de la imatge <small class="muted">(fes clic sobre la boca per moure-la)</small></h4>
+          <div class="mouth-wrap"><img id="mouth-img" alt="" /><div id="mouth-marker"></div></div>
+          <label>Amplada de la boca <input type="range" id="mouth-w" min="0.03" max="0.4" step="0.005" /></label>
+        </div>
         <div id="script-editor"></div>
         <button type="button" id="rerender" class="primary">Torna a renderitzar amb aquest guió</button>
       </div>

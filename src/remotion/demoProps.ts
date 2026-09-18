@@ -7,8 +7,8 @@ const script: FoodTalkProps["script"] = {
   hook: "El tomàquet ha dit prou",
   scene: "Nevera de nit",
   characters: [
-    { id: "tomaquet", name: "Tomàquet", kind: "tomato", color: "#e53935", personality: "Dramàtic", voice: "energetic_male", accessory: "none" },
-    { id: "alvocat", name: "Alvocat", kind: "avocado", color: "#7cb342", personality: "Cínic", voice: "sassy_female", accessory: "sunglasses" },
+    { id: "tomaquet", name: "Tomàquet", kind: "tomato", color: "#e53935", personality: "Dramàtic", voice: "energetic_male", accessory: "none", source: "drawn" },
+    { id: "alvocat", name: "Alvocat", kind: "avocado", color: "#7cb342", personality: "Cínic", voice: "sassy_female", accessory: "sunglasses", source: "drawn" },
   ],
   lines: [
     { speaker: "tomaquet", text: "Cada dia el mateix: amanida, amanida, amanida. Jo tinc somnis, saps?", emotion: "angry", action: "shake" },
@@ -21,12 +21,14 @@ const script: FoodTalkProps["script"] = {
   caption: "Demo",
   hashtags: ["demo"],
   image_role: "hidden",
+  image_character: null,
 };
 
 export const demoProps: FoodTalkProps = {
   script,
   lines: script.lines.map((l) => ({ ...l, audioUrl: null, durationSeconds: estimateDurationSeconds(l.text) })),
   imageUrl: null,
+  cutoutUrl: null,
   platform: "reel",
   brandHandle: "@elmeunegoci",
   language: "ca",

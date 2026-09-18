@@ -150,6 +150,8 @@ app.post("/api/jobs/:id/rerender", (req, res) => {
   const dir = jobDir(id);
   fs.mkdirSync(dir, { recursive: true });
   if (source.imageFile) fs.copyFileSync(path.join(jobDir(source.id), source.imageFile), path.join(dir, source.imageFile));
+  const sourceCutout = path.join(jobDir(source.id), "cutout.png");
+  if (fs.existsSync(sourceCutout)) fs.copyFileSync(sourceCutout, path.join(dir, "cutout.png"));
   // Només se sobreescriuen les opcions que arriben explícitament (els valors per defecte de l'esquema no han de trepitjar les de la feina original).
   const options = { ...source.options };
   if (req.body.options && typeof req.body.options === "object") {

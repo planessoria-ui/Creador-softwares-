@@ -67,6 +67,12 @@ Per retocar l'estil del vídeo en directe (colors, fonts, disposició) obre l'es
 
 **Música de fons:** deixa fitxers `.mp3` a `assets/music/` i se'n triarà un a l'atzar a volum baix. No se n'inclou cap per qüestions de llicència.
 
+## Mode imatge: el personatge de la teva foto
+
+Si la imatge mostra un personatge de menjar amb cara (una il·lustració, una imatge generada per IA…), el programa el pot fer servir com a protagonista: Claude localitza la cara i la boca, el personatge es retalla del fons amb un model d'IA local (`@imgly/background-removal-node`, sense cap clau), s'anima sobre l'escena original i se li superposa una boca sincronitzada amb la veu. Els altres personatges del mateix menjar són variants del retall (girats, amb un canvi de to i un accessori).
+
+A la web es tria a **«Personatges a partir de»**: *Automàtic* (Claude decideix segons la imatge), *La meva imatge* o *Dibuixos cartoon*. Un cop generat, a l'apartat del guió pots corregir la posició i l'amplada de la boca fent clic sobre la imatge i tornar a renderitzar.
+
 ## Com es fa el guió (i com ajustar-lo)
 
 El prompt del sistema és a `src/pipeline/script.ts`. Demana a Claude comèdia enginyosa (conflicte real entre personatges, rèpliques curtes, gir final que recontextualitza), sense acudits fàcils de "sóc una poma", i li dona les restriccions tècniques: quins menjars sabem dibuixar, quant dura una frase de veu, quantes paraules per línia. El resultat arriba com a JSON validat amb l'esquema de `src/shared/schema.ts` (structured outputs), de manera que mai falla per format.
@@ -88,12 +94,13 @@ src/
   pipeline/
     script.ts          guió amb Claude (visió + structured outputs)
     tts.ts             veus: ElevenLabs / OpenAI / Edge / silenci
+    cutout.ts          retall del personatge de la imatge (mode imatge)
     render.ts          empaqueta i renderitza amb Remotion
     index.ts           orquestra una feina de principi a fi
   remotion/
     FoodTalk.tsx       composició principal
     foods.tsx          dibuixos SVG dels 34 menjars
-    components/        personatge animat, bafarada, ganxo, targeta final…
+    components/        personatge dibuixat, personatge d'imatge, bafarada, ganxo, targeta final…
     Gallery.tsx        galeria de personatges per a l'estudi
   shared/
     schema.ts          esquema del guió (zod) i tipus compartits

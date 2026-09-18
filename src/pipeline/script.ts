@@ -52,6 +52,11 @@ Regles d'humor:
 
 Si l'usuari adjunta una imatge, analitza-la amb detall: quins menjars hi surten, quin ambient té, si és un producte, un plat, una cuina, un mercat... Tria els personatges perquè tinguin relació amb la imatge (el mateix menjar o un d'antagònic) i fes que el diàleg giri al voltant del que s'hi veu. Si la imatge mostra un producte o plat concret, posa "image_role" a "product".
 
+Personatges a partir de la imatge ("source": "image"):
+- Si la imatge mostra UN personatge de menjar amb cara (real, il·lustrat o generat per IA), es pot fer servir com a personatge: el programa el retalla del fons, l'anima i li superposa una boca que parla. En aquest cas el primer personatge amb source "image" és exactament el de la imatge (posa-li el "kind" del menjar que és, i el color que té); els altres personatges amb source "image" són variants seves ("semblants però no iguals": el programa els gira, els canvia una mica el to i els posa l'accessori que indiquis). Tria accessoris diferents per a cada variant i "none" per a l'original.
+- Quan hi hagi personatges amb source "image", omple "image_character" amb la cara i la boca del personatge dins de la imatge, en coordenades de 0 a 1 (x cap a la dreta, y cap avall, relatives a l'amplada i l'alçada totals). Sigues precís: "mouth" és el centre de la boca i la seva amplada; "face" és el requadre de la cara sencera. Posa "image_role" a "backdrop" perquè l'escena de la imatge quedi de fons.
+- Si no hi ha cap personatge amb source "image", posa "image_character" a null.
+
 Retorna només el guió en el format estructurat demanat.`;
 }
 
@@ -71,7 +76,16 @@ function buildUserPrompt(opts: GenerationOptions, hasImage: boolean): string {
       : "",
     hasImage
       ? "Adjunto la imatge que ha d'inspirar el vídeo."
-      : "No hi ha imatge: inventa l'escena a partir del prompt i posa image_role a 'hidden'.",
+      : "No hi ha imatge: inventa l'escena a partir del prompt, posa image_role a 'hidden', image_character a null i tots els personatges amb source 'drawn'.",
+    hasImage && opts.characterStyle === "image"
+      ? "MODE IMATGE: el protagonista ha de ser el personatge que surt a la imatge (source 'image') i, si hi ha més personatges del mateix menjar, també han de ser variants de la imatge (source 'image'). Omple image_character."
+      : "",
+    hasImage && opts.characterStyle === "drawn"
+      ? "Tots els personatges han de ser dibuixats (source 'drawn'); image_character a null."
+      : "",
+    hasImage && opts.characterStyle === "auto"
+      ? "Si la imatge mostra clarament un únic personatge de menjar amb cara, fes-lo protagonista amb source 'image' (i les variants també 'image'); si no, personatges dibuixats (source 'drawn') i image_character a null."
+      : "",
     "",
     "Idea o prompt de l'usuari:",
     opts.prompt.trim(),
@@ -173,6 +187,9 @@ export function normalizeScript(raw: Script): Script {
     ...c,
     color: /^#[0-9a-fA-F]{6}$/.test(c.color) ? c.color : "#ff7043",
   }));
+  // Sense coordenades de la imatge, cap personatge pot venir de la imatge.
+  const hasImageCharacter = Boolean(script.image_character);
+  for (const c of characters) if (!hasImageCharacter) c.source = "drawn";
   return {
     ...script,
     characters,
@@ -245,6 +262,7 @@ export function demoScript(language: GenerationOptions["language"] = "ca"): Scri
         personality: "Dramàtic i cansat de la rutina, però amb esperança.",
         voice: "energetic_male",
         accessory: "none",
+        source: "drawn",
       },
       {
         id: "alvocat",
@@ -254,6 +272,7 @@ export function demoScript(language: GenerationOptions["language"] = "ca"): Scri
         personality: "Ex-influencer venut a l'èxit, cínic i orgullós.",
         voice: "sassy_female",
         accessory: "sunglasses",
+        source: "drawn",
       },
     ],
     lines: texts.lines.map(([speaker, text, emotion, action]) => ({
@@ -267,5 +286,6 @@ export function demoScript(language: GenerationOptions["language"] = "ca"): Scri
     caption: texts.caption,
     hashtags: texts.hashtags,
     image_role: "product",
+    image_character: null,
   });
 }

@@ -77,8 +77,30 @@ export const CharacterSchema = z.object({
   accessory: z
     .enum(["none", "glasses", "sunglasses", "hat", "bowtie", "mustache", "crown", "headphones"])
     .describe("Accessori visual opcional"),
+  source: z
+    .enum(["drawn", "image"])
+    .describe(
+      "drawn: personatge dibuixat segons 'kind'. image: és el personatge retallat de la imatge de l'usuari (el primer és l'original; els següents, variants semblants)"
+    ),
 });
 export type Character = z.infer<typeof CharacterSchema>;
+
+/** On és la cara i la boca del personatge dins de la imatge (coordenades 0..1 relatives a l'amplada/alçada). */
+export const ImageCharacterSchema = z.object({
+  description: z.string().describe("Descripció breu del personatge de la imatge (què és, estil, roba, expressió)"),
+  face: z.object({
+    x: z.number().min(0).max(1).describe("Vora esquerra de la cara (0..1)"),
+    y: z.number().min(0).max(1).describe("Vora superior de la cara (0..1)"),
+    w: z.number().min(0).max(1).describe("Amplada de la cara (0..1)"),
+    h: z.number().min(0).max(1).describe("Alçada de la cara (0..1)"),
+  }),
+  mouth: z.object({
+    x: z.number().min(0).max(1).describe("Centre horitzontal de la boca (0..1)"),
+    y: z.number().min(0).max(1).describe("Centre vertical de la boca (0..1)"),
+    w: z.number().min(0).max(1).describe("Amplada de la boca (0..1 de l'amplada de la imatge)"),
+  }),
+});
+export type ImageCharacter = z.infer<typeof ImageCharacterSchema>;
 
 export const LineSchema = z.object({
   speaker: z.string().describe("id del personatge que parla"),
@@ -110,6 +132,9 @@ export const ScriptSchema = z.object({
     .describe(
       "product: la imatge és el protagonista i es mostra en una targeta; backdrop: només de fons; hidden: no s'usa"
     ),
+  image_character: ImageCharacterSchema.nullable().describe(
+    "Si algun personatge té source 'image', on són la cara i la boca del personatge a la imatge; si no, null"
+  ),
 });
 export type Script = z.infer<typeof ScriptSchema>;
 
@@ -123,6 +148,8 @@ export const GenerationOptionsSchema = z.object({
     .default("witty"),
   targetSeconds: z.number().int().min(15).max(60).default(40),
   ttsProvider: z.enum(["auto", "elevenlabs", "openai", "edge", "silent"]).default("auto"),
+  /** auto: si la imatge mostra un personatge de menjar, s'usa retallat; drawn: sempre dibuixats; image: sempre la imatge */
+  characterStyle: z.enum(["auto", "drawn", "image"]).default("auto"),
   brandHandle: z.string().default(""),
   platforms: z.array(z.enum(["reel", "tiktok"])).min(1).default(["reel", "tiktok"]),
 });
@@ -143,6 +170,8 @@ export type FoodTalkProps = {
   script: Script;
   lines: TimedLine[];
   imageUrl: string | null;
+  /** PNG amb transparència del personatge retallat de la imatge (mode imatge); null si no n'hi ha */
+  cutoutUrl: string | null;
   platform: Platform;
   brandHandle: string;
   language: "ca" | "es" | "en";

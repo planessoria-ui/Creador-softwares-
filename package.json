@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.126.0",
+    "@imgly/background-removal-node": "^1.4.5",
     "@remotion/bundler": "^4.0.526",
     "@remotion/cli": "^4.0.526",
     "@remotion/media-utils": "^4.0.526",

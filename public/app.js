@@ -64,6 +64,7 @@ function collectForm(demo) {
   fd.append("tone", form.tone.value);
   fd.append("targetSeconds", form.targetSeconds.value);
   fd.append("ttsProvider", form.ttsProvider.value);
+  fd.append("characterStyle", form.characterStyle.value);
   fd.append("brandHandle", form.brandHandle.value.trim());
   const platforms = [...form.querySelectorAll("input[name=platforms]:checked")].map((i) => i.value);
   fd.append("platforms", platforms.join(","));
@@ -148,6 +149,34 @@ function renderResult(job) {
   $("#captions").textContent = job.captions || "";
   currentScript = job.script;
   renderScriptEditor(job.script);
+  renderMouthEditor(job);
+}
+
+// ---- editor de la boca (mode imatge) -----------------------------------------
+function renderMouthEditor(job) {
+  const box = $("#mouth-editor");
+  const geo = job.script && job.script.image_character;
+  if (!geo || !job.imageUrl) { box.classList.add("hidden"); return; }
+  box.classList.remove("hidden");
+  const img = $("#mouth-img");
+  img.src = job.imageUrl;
+  $("#mouth-w").value = geo.mouth.w;
+  const paint = () => {
+    const g = currentScript.image_character;
+    const m = $("#mouth-marker");
+    m.style.left = `${g.mouth.x * 100}%`;
+    m.style.top = `${g.mouth.y * 100}%`;
+    m.style.width = `${g.mouth.w * 100}%`;
+  };
+  img.onload = paint;
+  paint();
+  img.onclick = (e) => {
+    const r = img.getBoundingClientRect();
+    currentScript.image_character.mouth.x = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+    currentScript.image_character.mouth.y = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
+    paint();
+  };
+  $("#mouth-w").oninput = (e) => { currentScript.image_character.mouth.w = Number(e.target.value); paint(); };
 }
 
 $("#copy").addEventListener("click", async () => {
@@ -218,7 +247,7 @@ $("#rerender").addEventListener("click", async () => {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       script: readScriptEditor(),
-      options: { ttsProvider: form.ttsProvider.value, brandHandle: form.brandHandle.value.trim(), platforms: platforms.length ? platforms : undefined },
+      options: { ttsProvider: form.ttsProvider.value, characterStyle: form.characterStyle.value, brandHandle: form.brandHandle.value.trim(), platforms: platforms.length ? platforms : undefined },
     }),
   });
   const job = await res.json();
