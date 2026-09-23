@@ -26,16 +26,44 @@ function configure(): void {
   fal.config({ credentials: process.env.FAL_KEY });
 }
 
-async function download(url: string, outFile: string): Promise<void> {
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`No s'ha pogut baixar ${url}: ${res.status}`);
-  fs.writeFileSync(outFile, Buffer.from(await res.arrayBuffer()));
+/** Reintenta una operació de xarxa (fetch failed, timeouts, 5xx) amb espera creixent. */
+async function withRetry<T>(label: string, fn: () => Promise<T>, log: (m: string) => void = () => {}, attempts = 4): Promise<T> {
+  let lastError: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      const msg = err instanceof Error ? err.message : String(err);
+      // Errors de validació o de saldo no es reintenten
+      if (/4\d\d|validation|unauthorized|forbidden|insufficient|balance/i.test(msg) && !/429|408/.test(msg)) throw err;
+      if (i < attempts - 1) {
+        const wait = 3000 * (i + 1);
+        log(`  ${label}: error de xarxa (${msg.slice(0, 80)}); reintent ${i + 2}/${attempts} en ${wait / 1000} s`);
+        await new Promise((r) => setTimeout(r, wait));
+      }
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error(String(lastError));
 }
 
-async function uploadFile(filePath: string, contentType: string): Promise<string> {
+async function download(url: string, outFile: string, log: (m: string) => void = () => {}): Promise<void> {
+  await withRetry(
+    "baixada",
+    async () => {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`No s'ha pogut baixar ${url}: ${res.status}`);
+      const tmp = `${outFile}.part`;
+      fs.writeFileSync(tmp, Buffer.from(await res.arrayBuffer()));
+      fs.renameSync(tmp, outFile);
+    },
+    log
+  );
+}
+
+async function uploadFile(filePath: string, contentType: string, log: (m: string) => void = () => {}): Promise<string> {
   const data = fs.readFileSync(filePath);
-  const blob = new Blob([data], { type: contentType });
-  return fal.storage.upload(blob);
+  return withRetry("pujada", () => fal.storage.upload(new Blob([data], { type: contentType })), log);
 }
 
 function mimeFor(file: string): string {
@@ -63,15 +91,23 @@ async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T, i: number
 
 async function runModel<T>(model: string, input: Record<string, unknown>, log: (m: string) => void, label: string): Promise<T> {
   const started = Date.now();
-  const result = await fal.subscribe(model as never, {
-    input: input as never,
-    logs: false,
-    onQueueUpdate: (update) => {
-      if (update.status === "IN_PROGRESS" && Date.now() - started > 60_000 && (Date.now() - started) % 30_000 < 3_000) {
-        log(`  ${label}: en procés (${Math.round((Date.now() - started) / 1000)} s)`);
-      }
-    },
-  });
+  let lastReport = 0;
+  const result = await withRetry(
+    label,
+    () =>
+      fal.subscribe(model as never, {
+        input: input as never,
+        logs: false,
+        onQueueUpdate: (update) => {
+          const elapsed = Date.now() - started;
+          if (update.status === "IN_PROGRESS" && elapsed > 45_000 && elapsed - lastReport > 30_000) {
+            lastReport = elapsed;
+            log(`  ${label}: en procés (${Math.round(elapsed / 1000)} s)`);
+          }
+        },
+      }),
+    log
+  );
   log(`  ${label}: fet en ${Math.round((Date.now() - started) / 1000)} s`);
   return result.data as T;
 }
@@ -91,7 +127,7 @@ export async function prepareCharacterImages(
   configure();
   const outDir = path.join(dir, "characters");
   fs.mkdirSync(outDir, { recursive: true });
-  const originalUrl = await uploadFile(imagePath, mimeFor(imagePath));
+  const originalUrl = await uploadFile(imagePath, mimeFor(imagePath), log);
   const result: CharacterImages = {};
   let first = true;
   for (const c of script.characters) {
@@ -105,7 +141,7 @@ export async function prepareCharacterImages(
     const file = path.join(outDir, `${c.id}-${key}.png`);
     if (fs.existsSync(file)) {
       log(`Variant de ${c.name} ja generada: es reutilitza.`);
-      result[c.id] = { url: await uploadFile(file, "image/png"), file };
+      result[c.id] = { url: await uploadFile(file, "image/png", log), file };
       continue;
     }
     log(`Generant la variant de ${c.name} (${IMAGE_EDIT_MODEL})…`);
@@ -122,7 +158,7 @@ export async function prepareCharacterImages(
     );
     const url = out.images?.[0]?.url;
     if (!url) throw new Error(`El model d'imatge no ha retornat cap imatge per a ${c.name}`);
-    await download(url, file);
+    await download(url, file, log);
     result[c.id] = { url, file };
   }
   return result;
@@ -157,7 +193,25 @@ export async function generateLineClips(
   const charById = new Map(script.characters.map((c) => [c.id, c] as [string, Character]));
 
   log(`Generant ${lines.length} clips amb ${I2V_MODEL} (${PARALLEL} alhora). Pot trigar uns minuts.`);
-  return mapLimit(lines, PARALLEL, async (line, i) => {
+  const failures: string[] = [];
+  const results = await mapLimit(lines, PARALLEL, async (line, i) => {
+    try {
+      return await generateOne(line, i);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      failures.push(`línia ${i + 1}: ${msg}`);
+      log(`  clip ${i + 1}/${lines.length}: ERROR ${msg.slice(0, 160)}`);
+      return null;
+    }
+  });
+  if (failures.length > 0) {
+    throw new Error(
+      `${failures.length} de ${lines.length} clips han fallat (${failures[0]}). Els altres ja estan desats: prem «Torna a renderitzar amb aquest guió» per reintentar només els que falten.`
+    );
+  }
+  return results as ClipResult[];
+
+  async function generateOne(line: Line, i: number): Promise<ClipResult> {
     const character = charById.get(line.speaker) ?? script.characters[0];
     const image = images[character.id] ?? images[script.characters[0].id];
     const audioFile = audioFiles[i];
@@ -173,12 +227,21 @@ export async function generateLineClips(
     }
 
     const label = `clip ${i + 1}/${lines.length}`;
-    const i2v = await runModel<{ video: { url: string } }>(I2V_MODEL, i2vInput(I2V_MODEL, image.url, prompt, seconds), log, `${label} vídeo`);
-    let videoUrl = i2v.video?.url;
-    if (!videoUrl) throw new Error(`El model de vídeo no ha retornat cap clip per a la línia ${i + 1}`);
+    // El resultat intermedi (clip sense sincronitzar) es desa per no tornar a pagar-lo si falla un pas posterior
+    const i2vCache = path.join(clipsDir, `line-${String(i).padStart(2, "0")}-${key}.i2v.json`);
+    let videoUrl: string | undefined;
+    if (fs.existsSync(i2vCache)) {
+      videoUrl = (JSON.parse(fs.readFileSync(i2vCache, "utf8")) as { url: string }).url;
+      log(`  ${label}: vídeo ja generat abans; només cal sincronitzar.`);
+    } else {
+      const i2v = await runModel<{ video: { url: string } }>(I2V_MODEL, i2vInput(I2V_MODEL, image.url, prompt, seconds), log, `${label} vídeo`);
+      videoUrl = i2v.video?.url;
+      if (!videoUrl) throw new Error(`El model de vídeo no ha retornat cap clip per a la línia ${i + 1}`);
+      fs.writeFileSync(i2vCache, JSON.stringify({ url: videoUrl, at: new Date().toISOString() }));
+    }
 
     if (audioFile) {
-      const audioUrl = await uploadFile(audioFile, "audio/mpeg");
+      const audioUrl = await uploadFile(audioFile, "audio/mpeg", log);
       const syncMode = audioSeconds !== null && audioSeconds > seconds ? "bounce" : "cut_off";
       const input: Record<string, unknown> = LIPSYNC_MODEL.includes("sync-lipsync")
         ? { video_url: videoUrl, audio_url: audioUrl, sync_mode: syncMode }
@@ -187,7 +250,7 @@ export async function generateLineClips(
       if (synced.video?.url) videoUrl = synced.video.url;
       else log(`  ${label}: la sincronització no ha retornat vídeo; s'usa el clip sense sincronitzar.`);
     }
-    await download(videoUrl, outFile);
+    await download(videoUrl, outFile, log);
     return { file: outFile, durationSeconds: await mediaDurationSeconds(outFile) };
-  });
+  }
 }
