@@ -1,8 +1,10 @@
 # PLAN DE 0 € A LOS PRIMEROS 10 CLIENTES
 
-24/09/2026
+24/09/2026 · Lleida
 
 Recomendación: empezar solo con gimnasios independientes y centros de entrenamiento (boxes, estudios, artes marciales) de vuestra zona, vendiendo uniforme para el equipo + una colección para socios en preventa, con el contenido IA incluido como herramienta de venta. Sin stock, cobrando el 50 % por adelantado. Meta: 10 clientes pagando en 90 días.
+
+**Adaptado a Lleida ciudad.** Lista de prospectos reales: Gimnasios Lleida. Todo lo legal para ponerlo en marcha: Marco legal.
 
 ## Supuestos y preguntas abiertas
 
@@ -14,7 +16,7 @@ Este plan se puede ejecutar mañana con los supuestos de abajo. Si alguno es fal
 
 | Supuesto | Si no se cumple… |
 | --- | --- |
-| Vivís en una ciudad española con al menos 40–60 gimnasios/boxes/estudios a menos de 20 min | Ampliad radio o añadid barberías y cafeterías de especialidad (plan B, Parte 2) |
+| Estáis en Lleida ciudad: los directorios cuentan entre 66 y 139 gimnasios y hay 35 ya listados en la pestaña Gimnasios Lleida | Ampliad radio o añadid barberías y cafeterías de especialidad (plan B, Parte 2) |
 | El taller de la Persona 2 os cobra "precio de taller" (su coste + un margen pequeño pactado) | Los márgenes de la Parte 3 bajan; recalculad con la fórmula de la Parte 10 |
 | El taller acepta pedidos desde 10 unidades y entrega en 7–10 días laborables | Ajustad la promesa de plazo en guiones y propuestas |
 | La Persona 3 ya tiene acceso a sus herramientas de IA (o usa versiones gratuitas) | Si hay que pagar suscripciones, ya no es 0 €: pagadla solo tras el primer cobro |
@@ -26,7 +28,7 @@ Este plan se puede ejecutar mañana con los supuestos de abajo. Si alguno es fal
 1. **Precios reales del taller** para: camiseta algodón, camiseta técnica, sudadera con capucha, polo bordado, gorra bordada, delantal y tote bag. Con estampado de pecho + espalda y sin él. Sustituyen a nuestras estimaciones.
 2. **Mínimos y plazos** del taller: unidades mínimas por diseño, días de producción y qué pasa en temporada alta (diciembre, septiembre).
 3. **Relación con la Persona 2:** ¿es socio al mismo nivel o proveedor? Cambia cómo repartís beneficios.
-4. **Ciudad y zona** exactas, para priorizar prospectos y decidir si los guiones van en castellano o catalán.
+4. **Ciudad y zona:** resuelto, Lleida ciudad. Contacto en catalán por defecto.
 5. **Qué herramientas de IA** usa la Persona 3 y cuánto cuestan al mes.
 6. **Quién puede facturar hoy** (¿la empresa del taller puede emitir las primeras facturas?).
 
@@ -222,7 +224,7 @@ Tres packs y una modalidad de reventa. El que hay que vender casi siempre es el 
 | 2 | Definir flujo de trabajo IA: diseño → mockup → lifestyle → vídeo (Parte 5). Probar con 1 prenda. | P3 | 3 h | 1 mockup de prueba |
 | 3 | Marca ficticia 1 (box): diseños de 3 prendas. | P3 | 4 h | Colección 1 |
 | 3 | Fotografiar las prendas en blanco del taller (frente, espalda, detalle) sobre fondo liso: serán la base de los mockups realistas. | P2 | 1 h | 15–20 fotos base |
-| 3 | Primeros 35 prospectos en Google Maps + Instagram. | P1 | 3 h | 35 filas |
+| 3 | Confirmar que siguen abiertos los 35 centros de la pestaña Gimnasios Lleida (Maps + Instagram) y pasarlos a la hoja. | P1 | 3 h | 35 filas |
 | 4 | Marca ficticia 1: mockups, 4 lifestyle, 1 reel, cartel de preventa. | P3 | 4 h | Caso 1 completo |
 | 4 | Muestras con el nombre de vuestro proyecto: 3 camisetas + 1 sudadera para llevar en las visitas (coste de taller \~40 €, lo asume el taller; si no puede, saltadlo). | P2 | 1 h | Ropa para vender puesta |
 | 4 | Prospectos 36–70. | P1 | 3 h | 70 filas |
@@ -232,7 +234,7 @@ Tres packs y una modalidad de reventa. El que hay que vender casi siempre es el 
 | 6 | Escribir los guiones (Parte 7) adaptados a vuestra ciudad; ensayar en voz alta 30 min. | P1 | 2 h | Guiones practicados |
 | 7 | Revisión: ¿portfolio, 100 prospectos y guiones listos? Elegir los 10 primeros A para visitar. P3 prepara un mockup privado con el logo de cada uno (solo para enseñar en persona, nunca publicar). | Los 3 | 2 h + 3 h P3 | 10 mockups personalizados |
 | 8 | 8–10 visitas presenciales a prospectos A (horas valle: 11–13 h o 15–17 h). | P1 | 4 h | 3–4 conversaciones con el dueño |
-| 9 | 15 DMs de Instagram a prospectos A/B (tras interactuar con sus publicaciones el día antes) + 5 emails. Mockups para los siguientes 10. | P1 + P3 | 3 h + 2 h | 3–5 respuestas |
+| 9 | 15 llamadas al teléfono del negocio (prospectos A/B) con el guion de llamada; email o WhatsApp solo a quien diga "mándamelo". Mockups para los siguientes 10. | P1 + P3 | 3 h + 2 h | 3–5 respuestas |
 | 10 | 8–10 visitas más. Registrar todo en la hoja. | P1 | 4 h | 1–2 reuniones agendadas |
 | 11 | Seguimiento de todos los contactados (día 3 tras el primer contacto). | P1 | 2 h | +1 reunión |
 | 12 | Primera reunión (Parte 8). P2 acompaña si hay dudas técnicas (tejidos, bordado). | P1 (+P2) | 1 h + prep. | Necesidades claras |
@@ -347,13 +349,13 @@ ID · Nombre · Tipo (box, pilates, artes marciales…) · Barrio · Dirección 
 
 ### Ritmo de contacto (P1)
 
-- Por día de calle: 8–10 visitas o 15 DMs + 5 emails. No más: la calidad del mensaje importa más que el volumen.
+- Por día de calle: 8–10 visitas o 15 llamadas (sin emails ni DMs en frío: ver la pestaña Marco legal). No más: la calidad del mensaje importa más que el volumen.
 - Cada contacto: hasta 3 seguimientos (días 3, 7 y 14). Si no responde, "Más adelante" y se recupera en la siguiente fecha clave (enero, verano).
 - Cada viernes, contad: contactos, respuestas, reuniones, propuestas, cierres. Son los KPIs de la Parte 14.
 
 ## Parte 7 — Guiones de venta
 
-Todos los mensajes buscan un "sí" pequeño ("¿te lo paso?", "¿15 minutos?"), no vender en el primer contacto. Cambiad lo que va entre corchetes con algo real que hayáis visto de ese negocio; sin eso, suena a spam. Si el negocio se comunica en catalán, escribidle en catalán.
+Todos los mensajes buscan un "sí" pequeño ("¿te lo paso?", "¿15 minutos?"), no vender en el primer contacto. Cambiad lo que va entre corchetes con algo real que hayáis visto de ese negocio; sin eso, suena a spam. En Lleida, empezad en catalán y cambiad si os responden en castellano. Legal: el primer contacto es en persona o por teléfono; los mensajes de Instagram, WhatsApp y email de abajo son para después de un "sí, mándamelo" (pestaña Marco legal).
 
 ### 1. Mensaje de Instagram
 
@@ -818,7 +820,7 @@ Mañana es el Día 1: una reunión de 2 horas de los tres y cuatro deberes antes
 - [ ] **P2:** traer para el Día 2 los costes reales de las 7 prendas, mínimos y plazos.
 - [ ] **P1:** crear la hoja de Google Sheets con las columnas de la Parte 6 y apuntar los primeros 10 gimnasios.
 - [ ] **P3:** hacer el primer mockup sobre una foto real de una prenda del taller para probar el flujo.
-- [ ] **Los 3:** contestar las 6 preguntas del principio del documento.
+- [ ] **Los 3:** contestar las preguntas del principio del documento y pedir cita en Promoció Econòmica de la Paeria (asesoramiento gratuito).
 
 ## Fuentes
 
